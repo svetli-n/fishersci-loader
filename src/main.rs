@@ -3,7 +3,6 @@ use std::fs;
 use std::io::{Read, BufReader, BufRead};
 use std::fs::File;
 
-// example:  cargo run -- fisherscientific-2016-chemical-catalog.txt
 fn main() -> io::Result<()> {
 
     //TODO
