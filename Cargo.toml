@@ -7,4 +7,9 @@ edition = "2018"
 
 [dependencies]
 curl = "0.4.38"
+meilisearch-sdk = "0.8.1"
+futures = "0.3" # To be able to block on async functions if you are not using an async runtime
+serde = { version = "1.0", features = ["derive"] }
+
+
 

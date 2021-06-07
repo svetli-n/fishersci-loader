@@ -6,6 +6,11 @@ use curl::easy::Easy;
 use std::collections::HashMap;
 use std::ops::Index;
 use std::collections::hash_map::RandomState;
+use meilisearch_sdk::client::Client;
+use futures::executor::block_on;
+use meilisearch_sdk::document::Document;
+use std::fmt::Display;
+use serde::{Serialize, Deserialize};
 
 
 fn main() -> io::Result<()> {
@@ -19,17 +24,87 @@ fn main() -> io::Result<()> {
     // let urls = get_urls(file)?;
     // println!("{:?}", urls);
 
-    let url = "https://www.fishersci.com/us/en/catalog/search/products?keyword=BP1758-500";
-    let html = fetch_url(url);
-    let spec = get_spec(html);
-    println!("{:?}", spec);
-
-    //TODO
-    // insert to db
-
+    let id = "BP1758-500";
+    let url = format!("https://www.fishersci.com/us/en/catalog/search/products?keyword={}", id);
+    let html = fetch_url(&url);
+    let mut spec = get_spec(html);
+    spec.insert("id".to_string(), id.to_string());
+    spec.insert("id".to_string(), id.to_string());
+    insert_to_db(spec);
     Ok(())
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Doc {
+    id: String,
+    ph: String,
+    grade: String,
+    packaging: String,
+    identification: String,
+    filtered_through: String,
+    color: String,
+    lead_pb: String,
+    arsenic_as: String,
+    iron_fe: String,
+    physical_form: String,
+    concentration: String,
+    chemical_name_or_material: String,
+    quantity: String,
+    copper_cu: String,
+    calcium_ca: String,
+    protease: String,
+    magnesium_mg: String,
+    zinc_zn: String,
+    dnase:  String,
+}
+
+impl Doc {
+    fn from(spec: HashMap<String, String>) -> Self {
+        Doc {
+            id: spec.get("id").unwrap().to_owned(),
+            ph: spec.get("pH").unwrap().to_owned(),
+            grade: spec.get("Grade").unwrap().to_owned(),
+            packaging: spec.get("Packaging").unwrap().to_owned(),
+            identification: spec.get("Identification").unwrap().to_owned(),
+            filtered_through: spec.get("Filtered Through").unwrap().to_owned(),
+            color: spec.get("Color").unwrap().to_owned(),
+            lead_pb: spec.get("Lead (Pb)").unwrap().to_owned(),
+            arsenic_as: spec.get("Arsenic (As)").unwrap().to_owned(),
+            iron_fe: spec.get("Iron (Fe)").unwrap().to_owned(),
+            physical_form: spec.get("Physical Form").unwrap().to_owned(),
+            concentration: spec.get("Concentration").unwrap().to_owned(),
+            chemical_name_or_material: spec.get("Chemical Name or Material").unwrap().to_owned(),
+            quantity: spec.get("Quantity").unwrap().to_owned(),
+            copper_cu: spec.get("Copper (Cu)").unwrap().to_owned(),
+            calcium_ca: spec.get("Calcium (Ca)").unwrap().to_owned(),
+            protease: spec.get("Protease").unwrap().to_owned(),
+            magnesium_mg: spec.get("Magnesium (Mg)").unwrap().to_owned(),
+            zinc_zn: spec.get("Zinc (Zn)").unwrap().to_owned(),
+            dnase: spec.get("DNase").unwrap().to_owned(),
+        }
+    }
+}
+
+impl Document for Doc {
+    type UIDType = String;
+
+    fn get_uid(&self) -> &Self::UIDType {
+       &self.id
+    }
+}
+
+// docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch
+fn insert_to_db(spec: HashMap<String, String>) {
+    block_on(async move {
+        let client = Client::new("http://localhost:7700", "");
+        let chemicals = client.get_or_create("chemicals").await.unwrap();
+        let doc = Doc::from(spec);
+        let res = chemicals.add_documents(&[doc], Some("id")).await.unwrap();
+        println!("{:?}", chemicals.search().with_query("max").execute::<Doc>().await.unwrap().hits);
+    })
+}
+
+//TODO use https://docs.rs/fantoccini/0.17.3/fantoccini/ instead to get js
 //TODO get sku and price
 fn get_spec(st: String) -> HashMap<String, String, RandomState> {
     let mut vals = Vec::new();
