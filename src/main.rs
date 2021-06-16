@@ -83,19 +83,17 @@ async fn main() -> Result<(), fantoccini::error::CmdError> {
 
 // docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch
 async fn insert_to_db(spec: HashMap<String, String>) {
-    // block_on(async move {
-        let host_port = "http://localhost:7700";
-        let c = Client::new(host_port, "");
-        let index_name = "chemicals";
-        let chemicals = c.get_or_create(index_name).await.unwrap();
+    let host_port = "http://localhost:7700";
+    let c = Client::new(host_port, "");
+    let index_name = "chemicals";
+    let chemicals = c.get_or_create(index_name).await.unwrap();
 
-        let client = reqwest::Client::new();
-        let res = client.post(format!("{}/indexes/{}/documents", host_port, index_name))
-            .json(&[spec])
-            .send().await.unwrap();
-        println!("{:?}", res.status());
-        // println!("{:?}", chemicals.search().with_query("max").execute::<HashMap<String, String>>().await.unwrap().hits);
-    // })
+    let client = reqwest::Client::new();
+    let res = client.post(format!("{}/indexes/{}/documents", host_port, index_name))
+        .json(&[spec])
+        .send().await.unwrap();
+    println!("{:?}", res.status());
+    // println!("{:?}", chemicals.search().with_query("max").execute::<HashMap<String, String>>().await.unwrap().hits);
 }
 
 
