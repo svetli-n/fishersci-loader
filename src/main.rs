@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, fmt};
 use std::fs;
 use std::io::{Read, BufReader, BufRead, stdout, Write};
 use std::fs::File;
@@ -8,13 +8,27 @@ use std::ops::Index;
 use std::collections::hash_map::RandomState;
 use meilisearch_sdk::client::Client;
 use meilisearch_sdk::document::Document;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use serde_json::map::Values;
 use fantoccini::{ClientBuilder, Locator};
 use tokio;
 use meilisearch_sdk::search::Selectors;
+
+
+#[derive(Debug)]
+enum Currency {
+    USD,
+    EUR,
+}
+
+impl fmt::Display for Currency {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self);
+        Ok(())
+    }
+}
 
 
 #[tokio::main]
@@ -55,7 +69,9 @@ async fn main() -> Result<(), fantoccini::error::CmdError> {
         let mut price = c.find(Locator::Css(".qa_single_price")).await?;
         let price = price.find(Locator::Css("b")).await?.text().await?;
         spec.insert("id".to_string(), id.to_string());
-        spec.insert("price".to_string(), price.to_string());
+        spec.insert("price".to_string(), price.to_string().replace("$", ""));
+        spec.insert("currency".to_string(), Currency::USD.to_string());
+        spec.insert("supplier".to_string(), "fishersci".to_string());
         // println!("{:?}", spec);
         insert_to_db(spec).await;
     }
